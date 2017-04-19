@@ -1,3 +1,5 @@
+#include "sickd.h"
+
 #include <libserialport.h>
 #include <stdlib.h>
 #include <stdint.h>
