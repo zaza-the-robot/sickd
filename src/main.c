@@ -27,16 +27,13 @@ void sick_decode_packet(const uint8_t *buf, size_t len)
 size_t sick_process_packet(const uint8_t *buf, size_t len)
 {
 	uint8_t dest_addr;
-	uint16_t packet_len;
-	uint8_t cmd, sts;
+	uint16_t packet_len, crc, expected_crc;
 
 	if (len < 7)
 		return 0;
 
 	dest_addr = buf[1];
 	packet_len = buf[2] | buf[3] << 8;
-	cmd = buf[4];
-	sts = buf[6];
 
 	/* Header size is not given in plen */
 	packet_len += 6;
@@ -50,6 +47,12 @@ size_t sick_process_packet(const uint8_t *buf, size_t len)
 	/* Don't process the packet if we haven't received all of it. */
 	if (len < packet_len)
 		return 0;
+
+	crc = crc_sick(buf, len - 2);
+	expected_crc = buf[len - 1] | buf[len - 2] << 8;
+
+	if (crc != expected_crc)
+		return 1;
 
 	sick_decode_packet(buf, packet_len);
 
