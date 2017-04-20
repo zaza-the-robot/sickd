@@ -7,6 +7,10 @@
 #include <string.h>
 
 #define SICK_STX				0x02
+#define SICK_PKT_HEADER_LEN			4
+#define SICK_PKT_CRC_LEN			2
+#define SICK_PKT_WRAP_LENGTH			(SICK_PKT_HEADER_LEN \
+						+ SICK_PKT_CRC_LEN)
 #define MAX_REASONABLE_PACKET_LEN		700
 
 struct sick_sensor {
@@ -29,14 +33,14 @@ size_t sick_process_packet(const uint8_t *buf, size_t len)
 	uint8_t dest_addr;
 	uint16_t packet_len, crc, expected_crc;
 
-	if (len < 7)
+	if (len < SICK_PKT_HEADER_LEN)
 		return 0;
 
 	dest_addr = buf[1];
 	packet_len = buf[2] | buf[3] << 8;
 
-	/* Header size is not given in plen */
-	packet_len += 6;
+	/* The packet length field does not include the header and the CRC */
+	packet_len += SICK_PKT_WRAP_LENGTH;
 
 	if (packet_len > MAX_REASONABLE_PACKET_LEN) {
 		printf("Packet too long (%d). Re-syncing.\n", packet_len);
@@ -48,7 +52,7 @@ size_t sick_process_packet(const uint8_t *buf, size_t len)
 	if (len < packet_len)
 		return 0;
 
-	crc = crc_sick(buf, len - 2);
+	crc = crc_sick(buf, len - SICK_PKT_CRC_LEN);
 	expected_crc = buf[len - 1] | buf[len - 2] << 8;
 
 	if (crc != expected_crc)
