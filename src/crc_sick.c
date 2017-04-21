@@ -44,8 +44,6 @@ uint16_t crc_sick(const uint8_t *input_str, size_t num_bytes)
 {
 
 	uint16_t crc;
-	uint16_t low_byte;
-	uint16_t high_byte;
 	uint16_t short_c;
 	uint16_t short_p;
 	const uint8_t *ptr;
@@ -72,10 +70,6 @@ uint16_t crc_sick(const uint8_t *input_str, size_t num_bytes)
 
 		ptr++;
 	}
-
-	low_byte  = (crc & 0xff00) >> 8;
-	high_byte = (crc & 0x00ff) << 8;
-	crc       = low_byte | high_byte;
 
 	return crc;
 }
