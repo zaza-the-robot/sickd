@@ -15,6 +15,12 @@
 #include <stdint.h>
 #include <stdlib.h>
 
+static inline uint16_t read_le16(const void *buf)
+{
+	const uint8_t *raw = buf;
+	return raw[0] | (raw[1] << 8);
+}
+
 uint16_t crc_sick(const uint8_t *input_str, size_t num_bytes);
 
 #endif /* __SICKD_H */

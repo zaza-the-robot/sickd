@@ -23,7 +23,7 @@ static struct sick_sensor sick_pls = {
 	.baudrate = 9600,
 };
 
-void sick_decode_packet(const uint8_t *buf, size_t len)
+void sick_decode_payload(const uint8_t *buf, size_t len)
 {
 	/* NOT IMPLEMENTED! */
 }
@@ -31,16 +31,16 @@ void sick_decode_packet(const uint8_t *buf, size_t len)
 size_t sick_process_packet(const uint8_t *buf, size_t len)
 {
 	uint8_t dest_addr;
-	uint16_t packet_len, crc, expected_crc;
+	uint16_t payload_len, packet_len, crc, expected_crc;
 
 	if (len < SICK_PKT_HEADER_LEN)
 		return 0;
 
 	dest_addr = buf[1];
-	packet_len = buf[2] | buf[3] << 8;
+	payload_len = read_le16(buf + 2);
 
 	/* The packet length field does not include the header and the CRC */
-	packet_len += SICK_PKT_WRAP_LENGTH;
+	packet_len = payload_len + SICK_PKT_WRAP_LENGTH;
 
 	if (packet_len > MAX_REASONABLE_PACKET_LEN) {
 		printf("Packet too long (%d). Re-syncing.\n", packet_len);
@@ -53,12 +53,12 @@ size_t sick_process_packet(const uint8_t *buf, size_t len)
 		return 0;
 
 	crc = crc_sick(buf, len - SICK_PKT_CRC_LEN);
-	expected_crc = buf[len - 1] | buf[len - 2] << 8;
+	expected_crc = read_le16(&buf[len - 2]);
 
 	if (crc != expected_crc)
 		return 1;
 
-	sick_decode_packet(buf, packet_len);
+	sick_decode_payload(buf + SICK_PKT_HEADER_LEN, payload_len);
 
 	return packet_len;
 }
