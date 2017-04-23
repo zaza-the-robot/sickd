@@ -12,8 +12,29 @@
 #ifndef __SICKD_H
 #define __SICKD_H
 
+#include <libserialport.h>
 #include <stdint.h>
 #include <stdlib.h>
+
+struct sick_driver;
+
+struct sick_device {
+	struct sp_port *sp_dev;
+	const struct sick_driver *driver;
+	uint8_t buf[1024];
+	size_t buf_data_size;
+};
+
+struct sick_device_id {
+	const char *compatible;
+};
+
+struct sick_driver {
+	const struct sick_device_id *device_ids;
+	int (*open)(struct sick_device **sdev, const char *port);
+	void (*close)(struct sick_device *sdev);
+	int (*process_events)(struct sick_device *sdev);
+};
 
 static inline uint16_t read_le16(const void *buf)
 {
