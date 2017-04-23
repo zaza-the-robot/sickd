@@ -1,134 +1,70 @@
 #include "sickd.h"
 
-#include <libserialport.h>
 #include <stdlib.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
 
-#define SICK_STX				0x02
-#define SICK_PKT_HEADER_LEN			4
-#define SICK_PKT_CRC_LEN			2
-#define SICK_PKT_WRAP_LENGTH			(SICK_PKT_HEADER_LEN \
-						+ SICK_PKT_CRC_LEN)
-#define MAX_REASONABLE_PACKET_LEN		700
+#include <unistd.h>
 
 struct sick_sensor {
-	const char *name;
+	const char *compatible;
+	const char *port;
 	unsigned int baudrate;
 };
 
 static struct sick_sensor sick_pls = {
-	.name = "/dev/ttyUSB0",
+	.compatible = "pls201-113",
+	.port = "/dev/ttyUSB0",
 	.baudrate = 9600,
 };
 
-void sick_decode_payload(const uint8_t *buf, size_t len)
+extern const struct sick_driver pls201_driver;
+
+struct sick_device *open_device(const char *id, const char *port)
 {
-	/* NOT IMPLEMENTED! */
-}
+	const struct sick_device_id *ids;
+	struct sick_device *sdev;
+	const struct sick_driver *my_drv = &pls201_driver;
 
-size_t sick_process_packet(const uint8_t *buf, size_t len)
-{
-	uint8_t dest_addr;
-	uint16_t payload_len, packet_len, crc, expected_crc;
-
-	if (len < SICK_PKT_HEADER_LEN)
-		return 0;
-
-	dest_addr = buf[1];
-	payload_len = read_le16(buf + 2);
-
-	/* The packet length field does not include the header and the CRC */
-	packet_len = payload_len + SICK_PKT_WRAP_LENGTH;
-
-	if (packet_len > MAX_REASONABLE_PACKET_LEN) {
-		printf("Packet too long (%d). Re-syncing.\n", packet_len);
-		/* Skip the STX byte, so we re-sync on the next call. */
-		return 1;
+	ids = my_drv->device_ids;
+	for (ids = my_drv->device_ids; ids->compatible; ids++) {
+		if (!strcmp(id, ids->compatible))
+			break;
 	}
 
-	/* Don't process the packet if we haven't received all of it. */
-	if (len < packet_len)
-		return 0;
-
-	crc = crc_sick(buf, len - SICK_PKT_CRC_LEN);
-	expected_crc = read_le16(&buf[len - 2]);
-
-	if (crc != expected_crc)
-		return 1;
-
-	sick_decode_payload(buf + SICK_PKT_HEADER_LEN, payload_len);
-
-	return packet_len;
-}
-
-/* Returns the number of bytes that have been processed and can be discarded. */
-size_t sick_process_stream(const void *buf, size_t len)
-{
-	const void *stx_ptr;
-	size_t num_skipped;
-	uintptr_t buf_start, packet_start;
-
-	stx_ptr = memchr(buf, SICK_STX, len);
-	if (!stx_ptr) {
-		/* No start byte. Discard everything. */
-		return len;
+	if (!ids->compatible) {
+		fprintf(stderr, "No driver for %s\n", sick_pls.compatible);
+		return NULL;
 	}
 
-	buf_start = (uintptr_t)buf;
-	packet_start = (uintptr_t)stx_ptr;
+	if (my_drv->open(&sdev, sick_pls.port) < 0) {
+		printf("Failed to open sick device!\n");
+		return NULL;
+	}
 
-	num_skipped = packet_start - buf_start;
-	num_skipped += sick_process_packet(stx_ptr, len - num_skipped);
-
-	return num_skipped;
+	return sdev;
 }
 
 int main(int argc, char **argv)
 {
-	uint8_t buf[1024];
-	size_t data_len = 0, processed;
-	int num_bytes, ret;
-	struct sp_port *sickp;
+	int ret;
+	struct sick_device *my_dev;
 
-	if (sp_get_port_by_name(sick_pls.name, &sickp) != SP_OK) {
-		printf("No such rerial port\n");
+	fprintf(stderr, "sickd starting on %s\n", sick_pls.port);
+
+	my_dev = open_device(sick_pls.compatible, sick_pls.port);
+	if (!my_dev)
 		return EXIT_FAILURE;
-	}
 
-	if (sp_open(sickp, SP_MODE_READ_WRITE) != SP_OK) {
-		printf("Could not open serial port\n");
-		return EXIT_FAILURE;
-	}
-
-	fprintf(stderr, "sickd starting on %s\n", sick_pls.name);
 
 	ret = EXIT_SUCCESS;
 	while (1) {
-		num_bytes = sp_nonblocking_read(sickp, buf + data_len,
-						sizeof(buf) - data_len);
-		if (num_bytes < 0) {
-			printf("Error reading from serial port\n");
+		if (my_dev->driver->process_events(my_dev) < 0) {
 			ret = EXIT_FAILURE;
 			break;
 		}
-		data_len += num_bytes;
-
-		if (data_len) {
-			processed = sick_process_stream(buf, data_len);
-			/* Trim the bytes we are told are not needed anymore. */
-			memmove(buf, buf + processed, data_len - processed);
-			data_len -= processed;
-		}
-
-		if (data_len == sizeof(buf)) {
-			printf("Buffer full. We are deadlocked. Aborting.\n");
-			ret = EXIT_FAILURE;
-		}
-
 	}
 
-	sp_close(sickp);
 	return ret;
 }

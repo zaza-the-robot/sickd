@@ -7,6 +7,7 @@ pkg_check_modules(PC_LIBSERIAL REQUIRED libserialport)
 set(SICK_SRCS
 	src/crc_sick.c
 	src/main.c
+	src/pls_201.c
 )
 
 
