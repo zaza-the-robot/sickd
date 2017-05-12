@@ -70,6 +70,9 @@ int main(int argc, char **argv)
 	if (!my_dev)
 		return EXIT_FAILURE;
 
+	if (sickd_smem_init() < 0)
+		return EXIT_FAILURE;
+
 
 	ret = EXIT_SUCCESS;
 	while (1) {

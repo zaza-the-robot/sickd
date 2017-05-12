@@ -12,6 +12,7 @@ set(SICK_SRCS
 	src/events.c
 	src/main.c
 	src/pls_201.c
+	src/shared_mem.c
 )
 
 
