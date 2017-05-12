@@ -14,9 +14,11 @@
 #ifndef __SICKD_H
 #define __SICKD_H
 
+#include "libsickd.h"
+
 #include <errno.h>
 #include <libserialport.h>
-#include <stdint.h>
+#include <stdatomic.h>
 #include <stdlib.h>
 
 #define ARRAY_SIZE(x)		(sizeof(x) / sizeof(x[0]))
@@ -41,6 +43,13 @@ struct sick_driver {
 	int (*process_events)(struct sick_device *sdev);
 };
 
+struct sickd_shmem_area {
+	atomic_size_t prepublish_stamp;
+	struct sick_packet pkt;
+	atomic_size_t postpublish_stamp;
+
+};
+
 static inline uint16_t read_le16(const void *buf)
 {
 	const uint8_t *raw = buf;
@@ -59,6 +68,9 @@ typedef int (*pollfd_callback)(struct sick_device *sdev);
 void sickd_source_add(struct sick_device *sdev, int pollfd);
 void sickd_source_remove(int pollfd);
 void sickd_run_events(void);
+
+int sickd_smem_init(void);
+int sickd_smem_publish(struct sick_packet *packet);
 
 uint16_t crc_sick(const uint8_t *input_str, size_t num_bytes);
 

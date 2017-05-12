@@ -4,6 +4,9 @@ project(sickd)
 find_package(PkgConfig)
 pkg_check_modules(PC_LIBSERIAL REQUIRED libserialport)
 
+include_directories(include)
+include_directories(src)
+
 set(SICK_SRCS
 	src/crc_sick.c
 	src/events.c
