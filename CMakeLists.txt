@@ -15,7 +15,15 @@ set(SICK_SRCS
 	src/shared_mem.c
 )
 
+set(LIBSICKD_SRCS
+	libsickd/sick_shmem_poll.c
+)
+
 
 add_executable(sickd ${SICK_SRCS})
+add_library(libsickd ${LIBSICKD_SRCS})
+# You silly cmake, name it 'libsickd', not 'liblibsickd'
+set_target_properties(libsickd PROPERTIES OUTPUT_NAME sickd)
+
 target_link_libraries(sickd ${PC_LIBSERIAL_LIBRARIES})
 install(TARGETS sickd RUNTIME DESTINATION bin)
