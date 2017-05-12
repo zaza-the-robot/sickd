@@ -21,6 +21,11 @@
 						+ SICK_PKT_CRC_LEN)
 #define MAX_REASONABLE_PACKET_LEN		700
 
+enum sick_packet_type {
+	SICK_PKT_TYPE_ID = 0x90,
+	SICK_PKT_TYPE_LASER_DISTANCE = 0xb0,
+};
+
 const struct sick_driver pls201_driver;
 
 static void pls201_close(struct sick_device *sdev)
@@ -71,9 +76,42 @@ static int pls201_open(struct sick_device **sdev, const char *port)
 	return ret;
 }
 
+static void pls_decode_laser_data(const uint8_t *buf, size_t len)
+{
+	size_t i, expected_len;
+	uint16_t distance[180];
+	uint16_t data_len = read_le16(buf + 1);
+	const uint8_t *dist_base = buf + 3;
+
+	expected_len = data_len * sizeof(uint16_t) + 4;
+	/* TODO: Handle this elegantly */
+	if ((len != expected_len) || (data_len != 180))
+		return;
+
+	for (i = 0; i < data_len; i++) {
+		distance[i] = read_le16(dist_base + i * sizeof (uint16_t));
+		distance[i] &= 0x3ff;
+	}
+
+	/* TODO: Publish the data somehow. */
+	(void) distance;
+}
+
 static void pls_decode_payload(const uint8_t *buf, size_t len)
 {
-	/* NOT IMPLEMENTED */
+	uint8_t type = buf[0];
+
+	switch (type) {
+	case SICK_PKT_TYPE_ID:
+		printf("ID packet: %.*s\n", len - 1, buf + 1);
+		break;
+	case SICK_PKT_TYPE_LASER_DISTANCE:
+		pls_decode_laser_data(buf, len);
+		break;
+	default:
+		printf("Unknown packet %.02x\n", type);
+		return;
+	}
 }
 
 static size_t pls_process_packet(const uint8_t *buf, size_t len)
