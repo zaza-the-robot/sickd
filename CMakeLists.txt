@@ -7,6 +7,9 @@ pkg_check_modules(PC_LIBSERIAL REQUIRED libserialport)
 include_directories(include)
 include_directories(src)
 
+# Must come after the 'include_directories' directive
+add_subdirectory(qsick)
+
 set(SICK_SRCS
 	src/crc_sick.c
 	src/events.c
