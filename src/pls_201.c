@@ -1,9 +1,12 @@
 /*
+ * sickd - Daemon for collecting data from Sick laser sensor devices
+ * This implements packet decoding for PLS201 series sensors.
+ *
  * Copyright (C) 2017 Alexandru Gagniuc <mr.nuke.me@gmail.com>
  *
  * This file is part of sickd.
  *
- * sickd is free software: you can redistribute it and/or modify
+ * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
