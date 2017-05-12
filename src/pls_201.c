@@ -86,22 +86,21 @@ static int pls201_open(struct sick_device **sdev, const char *port)
 static void pls_decode_laser_data(const uint8_t *buf, size_t len)
 {
 	size_t i, expected_len;
-	uint16_t distance[180];
+	struct sick_packet pkt;
 	uint16_t data_len = read_le16(buf + 1);
 	const uint8_t *dist_base = buf + 3;
 
 	expected_len = data_len * sizeof(uint16_t) + 4;
 	/* TODO: Handle this elegantly */
-	if ((len != expected_len) || (data_len != 180))
+	if ((len != expected_len) || (data_len != ARRAY_SIZE(pkt.distance)))
 		return;
 
 	for (i = 0; i < data_len; i++) {
-		distance[i] = read_le16(dist_base + i * sizeof (uint16_t));
-		distance[i] &= 0x3ff;
+		pkt.distance[i] = read_le16(dist_base + i * sizeof (uint16_t));
+		pkt.distance[i] &= 0x3ff;
 	}
 
-	/* TODO: Publish the data somehow. */
-	(void) distance;
+	sickd_smem_publish(&pkt);
 }
 
 static void pls_decode_payload(const uint8_t *buf, size_t len)
