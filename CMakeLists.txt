@@ -22,8 +22,13 @@ set(LIBSICKD_SRCS
 	libsickd/sick_shmem_poll.c
 )
 
+set(SHMGEN_SRCS
+	src/shared_mem.c
+	tests/sick-shmgen.c
+)
 
 add_executable(sickd ${SICK_SRCS})
+add_executable(sick-shmgen ${SHMGEN_SRCS})
 add_library(libsickd ${LIBSICKD_SRCS})
 # You silly cmake, name it 'libsickd', not 'liblibsickd'
 set_target_properties(libsickd PROPERTIES OUTPUT_NAME sickd)
