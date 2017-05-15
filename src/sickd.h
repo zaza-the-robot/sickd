@@ -18,6 +18,8 @@
 #include <stdint.h>
 #include <stdlib.h>
 
+#define ARRAY_SIZE(x)		(sizeof(x) / sizeof(x[0]))
+
 struct sick_driver;
 
 struct sick_device {
