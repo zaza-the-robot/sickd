@@ -50,17 +50,17 @@ static int pls_create(struct sick_device **sdev, const char *port)
 
 	new_sick = malloc(sizeof(*new_sick));
 	if (!new_sick)
-		return -1;
+		return -ENOMEM;
 
 
 	if (sp_get_port_by_name(port, &new_sick->sp_dev) != SP_OK) {
 		printf("No such serial port %s\n", port);
-		return -2;
+		return -ENODEV;
 	}
 
 	if (sp_open(new_sick->sp_dev, SP_MODE_READ_WRITE) != SP_OK) {
 		printf("Could not open serial port\n");
-		return -3;
+		return sp_last_error_code();
 	}
 
 	new_sick->driver = &pls201_driver;
@@ -188,7 +188,7 @@ static int pls201_process_events(struct sick_device *sdev)
 					sizeof(sdev->buf) - sdev->buf_data_size);
 	if (num_bytes < 0) {
 		printf("Error reading from serial port\n");
-		return -13;
+		return -EIO;
 	}
 
 	sdev->buf_data_size += num_bytes;
@@ -202,7 +202,7 @@ static int pls201_process_events(struct sick_device *sdev)
 
 	if (sdev->buf_data_size == sizeof(sdev->buf)) {
 		printf("Buffer full. We are deadlocked. Aborting.\n");
-		return -14;
+		return -EDEADLOCK;
 	}
 }
 

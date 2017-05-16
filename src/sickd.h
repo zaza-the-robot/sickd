@@ -14,6 +14,7 @@
 #ifndef __SICKD_H
 #define __SICKD_H
 
+#include <errno.h>
 #include <libserialport.h>
 #include <stdint.h>
 #include <stdlib.h>
