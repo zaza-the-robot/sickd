@@ -73,10 +73,7 @@ int main(int argc, char **argv)
 
 	ret = EXIT_SUCCESS;
 	while (1) {
-		if (my_dev->driver->process_events(my_dev) < 0) {
-			ret = EXIT_FAILURE;
-			break;
-		}
+		sickd_run_events();
 	}
 
 	return ret;
