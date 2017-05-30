@@ -47,6 +47,14 @@ static inline uint16_t read_le16(const void *buf)
 	return raw[0] | (raw[1] << 8);
 }
 
+static inline int sp_fileno(struct sp_port *sp_dev)
+{
+	int fd;
+
+	sp_get_port_handle(sp_dev, &fd);
+	return fd;
+}
+
 typedef int (*pollfd_callback)(struct sick_device *sdev);
 void sickd_source_add(struct sick_device *sdev, int pollfd);
 void sickd_source_remove(int pollfd);

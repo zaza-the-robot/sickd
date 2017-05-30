@@ -36,8 +36,10 @@ static void pls201_close(struct sick_device *sdev)
 	if (!sdev)
 		return;
 
-	if (sdev->sp_dev)
+	if (sdev->sp_dev) {
 		sp_close(sdev->sp_dev);
+		sickd_source_remove(sp_fileno(sdev->sp_dev));
+	}
 
 	free(sdev);
 }
@@ -75,6 +77,8 @@ static int pls201_open(struct sick_device **sdev, const char *port)
 	ret = pls_create(sdev, port);
 	if (ret < 0)
 		pls201_close(*sdev);
+
+	sickd_source_add(*sdev, sp_fileno((*sdev)->sp_dev));
 
 	return ret;
 }
